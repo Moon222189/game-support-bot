@@ -1,14 +1,15 @@
 import subprocess
-from flask import Flask, request, jsonify
+import os
 import threading
 import time
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
 FOUNDER_ID = "1323241842975834166"
 COFOUNDER_ID = "790777715652952074"
 
-# Example AI support corpus
+# Sample support sentences
 corpus = [
     "How do I open a ticket?",
     "Tickets are the fastest way to get help! 💬",
@@ -50,7 +51,7 @@ def generate_response(prompt, user_id=None):
     elif user_id == COFOUNDER_ID:
         extra_note = "\n(I wonder why the co-founder needs this… 🤔)"
 
-    # Simple dynamic response (can be replaced with real ML model)
+    # Simple dynamic response
     response = ""
     for sentence in corpus:
         if any(word in sentence.lower() for word in prompt_lower.split()):
@@ -69,12 +70,14 @@ def generate():
     return jsonify({"response": generate_response(prompt, user_id)})
 
 def start_discord_bot():
-    # Delay to ensure backend is running
-    time.sleep(3)
-    subprocess.Popen(["node", "index.js"])
+    time.sleep(3)  # Ensure backend is ready
+    env = os.environ.copy()  # Pass environment variables
+    subprocess.Popen(
+        ["node", "index.js"],
+        env=env,
+        cwd=os.path.dirname(os.path.abspath(__file__))
+    )
 
 if __name__ == "__main__":
-    # Start Discord bot in a separate thread
     threading.Thread(target=start_discord_bot).start()
-    # Start backend
     app.run(host="0.0.0.0", port=5000)
