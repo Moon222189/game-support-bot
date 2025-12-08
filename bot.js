@@ -12,7 +12,7 @@ const client = new Client({
 });
 
 // Support channel
-const SUPPORT_CHANNEL = "1443121189445959836";
+const SUPPORT_CHANNEL = "1447354370420113610";
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
