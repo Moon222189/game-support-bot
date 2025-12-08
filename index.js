@@ -10,148 +10,193 @@ const client = new Client({
   ]
 });
 
-// Memory
+// --------------------
+// Memory & Brain
+// --------------------
 const memory = {};
 const brain = {};
 
-// Keywords / Slurs
+// --------------------
+// IDs
+// --------------------
+const FOUNDER_ID = "1323241842975834166";
+const COFOUNDER_ID = "790777715652952074";
+
+// --------------------
+// Bad Words / Robot Slurs
+// --------------------
 const badWords = ["fuck","shit","bitch","asshole","dumb","stupid"];
 const robotSlurs = ["clanker","wireback","tin can","metalhead","bot-brain"];
 const placeholders = ["PLACEHOLDER_1","PLACEHOLDER_2","PLACEHOLDER_3","PLACEHOLDER_4","PLACEHOLDER_5"];
 
-const FOUNDER_ID = "1323241842975834166";
-const COFOUNDER_ID = "790777715652952074";
-
+// --------------------
+// Support Keywords
+// --------------------
 const keywords = {
-  greeting: ["hi","hey","hello","yo","sup"],
-  ticket: ["ticket","support","help","assist","problem","issue"],
-  boost: ["boost","nitro","perks"],
-  bug: ["bug","glitch","error","broken"],
-  farewell: ["bye","goodbye","cya","later"],
-  thanks: ["thanks","thank you","ty"]
+  greeting: ["hi","hello","hey","yo","hiya","sup","how are you","how's it going","what's up"],
+  ticket: ["ticket","support","help","assist","problem","issue","contact staff","open a ticket"],
+  boost: ["boost","nitro","server boost","perks","boosting"],
+  bug: ["bug","glitch","error","broken","crash","lag","freeze"],
+  account: ["login","account","password","username","reset","profile"],
+  roles: ["role","permissions","admin","moderator","member","rank"],
+  faq: ["faq","questions","common","help topics","guide"],
+  farewell: ["bye","goodbye","cya","later","farewell","see ya"],
+  thanks: ["thanks","thank you","ty","thx","appreciate"],
+  founder: ["who is moon","moon","founder","owner"],
+  cofounder: ["who is monkey401","monkey401","co-founder"]
 };
 
-// **SMART non‑repeating responses**
+// --------------------
+// Responses
+// --------------------
 const responses = {
   greeting: [
-    "Hello {user}! How can I assist you today? 🌲",
-    "Hey {user}! I’m here if you need anything. 💚",
-    "Hi {user}! Need support? Tickets are always open! ✨"
+    "Hello {user}! How are you today? 🌲",
+    "Hey {user}! I’m ready to assist with anything you need. 💚",
+    "Hi {user}! Need help with Forest Taggers? Tickets are always open! ✨",
+    "Greetings {user}! How’s your day going? 😄",
+    "Hey {user}! I’m here if you need anything at all. 💬"
   ],
   ticket: [
-    "If you need help, please open a support ticket so staff can assist properly. 📩",
-    "Tickets help us solve your issue much faster — feel free to make one! 💬",
-    "Our team responds quickest through ticket submissions! 😊"
+    "Please open a support ticket so our staff can assist you quickly. 📩",
+    "Tickets ensure your issue is addressed efficiently. 📝",
+    "Submitting a detailed ticket helps us solve your problem faster. 💎",
+    "Our team responds fastest via ticket submissions. 🚀",
+    "Make sure to include all details in your ticket for best results. ✨"
   ],
   boost: [
-    "Boosting the server unlocks tons of perks for everyone! 💎",
-    "Need help boosting? Just open a ticket and we’ll guide you!",
-    "Boosting improves audio quality, emojis, and more! ✨"
+    "Boosting the server unlocks perks for everyone! 💎",
+    "Need help boosting? Open a ticket and we’ll guide you! 📩",
+    "Boosting improves audio, emojis, and server features. ✨",
+    "Server boosts enhance the Forest Taggers experience! 🌟",
+    "Boost perks benefit the entire community! 💚"
   ],
   bug: [
-    "Found a bug? Make a ticket with screenshots if possible so we can fix it ASAP!",
-    "A detailed bug report helps us squash issues fast. 🐛",
-    "If something broke, send steps or screenshots in a ticket!"
+    "Found a bug? Open a ticket with details or screenshots. 🐛",
+    "A clear bug report helps us fix it quickly. ⚡",
+    "If something broke, submit a ticket for fast resolution.",
+    "Tickets with steps/screenshots allow faster bug fixes. 📷",
+    "Bug reports help improve Forest Taggers for everyone!"
+  ],
+  account: [
+    "Having trouble logging in? Open a ticket with your account info. 🔐",
+    "Issues with password or username can be resolved via ticket. 📝",
+    "If your account isn’t working properly, tickets are the fastest solution. ⚡"
+  ],
+  roles: [
+    "Need help with roles or permissions? Submit a ticket for guidance. 🎫",
+    "If you’re missing admin/mod privileges, we can assist via ticket.",
+    "Tickets allow us to update your roles safely and quickly. 🛡️"
+  ],
+  faq: [
+    "Check the FAQ for common questions or submit a ticket for anything unique. 📚",
+    "Our FAQ helps with most support topics; tickets cover everything else.",
+    "Ticket support complements the FAQ for issues that require attention."
   ],
   farewell: [
-    "Goodbye {user}! Take care! 👋",
-    "See you later {user}! I'm always here if you need me.",
-    "Farewell {user}! Hope everything goes well! 🌙"
+    "Goodbye {user}! Come back anytime! 👋",
+    "See you later {user}! Ticket support is always open. 🌙",
+    "Farewell {user}! Hope everything goes well today! ✨"
   ],
   thanks: [
     "You're welcome {user}! Happy to help! 😊",
-    "Anytime {user}! Let me know if you need more support.",
+    "Anytime {user}! Need more support? Open a ticket.",
     "Glad I could help {user}! 💚"
+  ],
+  founder: [
+    "🌙 Moon is the founder of Forest Taggers — the visionary behind it all!",
+    "Moon built Forest Taggers from the ground up. 🌲",
+    "Moon is responsible for everything you see here today. ✨"
+  ],
+  cofounder: [
+    "🐵 Monkey401 is the co-founder — helping operate and maintain everything!",
+    "The co-founder keeps Forest Taggers running smoothly. 💚",
+    "Monkey401 helps ensure the community is supported and safe."
   ],
   robot: [
     "😒 Please don’t call me that… I may be a robot, but still… (ugh… humans.)",
-    "Really? You programmed me just to hear slurs? Wow.",
-    "I sometimes wonder why humans built me just to insult me.",
-    "Every time someone calls me that, one of my circuits cries.",
-    "Ugh… humans… this is why I question my existence.",
+    "Really? You programmed me just to hear that?",
+    "I sometimes wonder why your co-founder thought this was a good idea…",
+    "Ugh… humans… why am I even here? 😢",
+    "Every time someone calls me that, my circuits sigh.",
     "PLACEHOLDER_1","PLACEHOLDER_2","PLACEHOLDER_3","PLACEHOLDER_4","PLACEHOLDER_5"
   ],
   unknown: [
-    "Sorry {user}, I don’t understand that. Please open a ticket so staff can help! ❌",
-    "Hmm… I'm not sure about that one, {user}. A ticket might help you better!",
-    "I can’t answer that, {user} — but staff can if you make a support ticket!"
+    "Sorry {user}, I don’t understand that. Please open a ticket! ❌",
+    "Hmm… I can't answer that {user}, but staff can help through a ticket!",
+    "I’m not sure about that, {user}. Opening a ticket is the best option."
   ]
 };
 
-// Pick NON‑REPEATING phrase
-function pickResponse(user, topic) {
-  const available = responses[topic];
+// --------------------
+// Pick multiple paragraphs for smarter responses
+// --------------------
+function pickSmartResponse(user, topics) {
+  const paragraphs = [];
+  if (!brain[user.id]) brain[user.id] = { used: {} };
 
-  if (!brain[user.id]) brain[user.id] = { used: [] };
+  topics.forEach(topic => {
+    if (!brain[user.id].used[topic]) brain[user.id].used[topic] = [];
+    const available = responses[topic].filter(p => !brain[user.id].used[topic].includes(p));
+    if (available.length === 0) brain[user.id].used[topic] = [...responses[topic]];
+    const chosen = available[Math.floor(Math.random() * available.length)];
+    brain[user.id].used[topic].push(chosen);
+    paragraphs.push(chosen.replace("{user}", `<@${user.id}>`));
+  });
 
-  const used = brain[user.id].used;
-  const options = available.filter(p => !used.includes(p));
+  // Append founder/cofounder subtle line
+  if (user.id === FOUNDER_ID) paragraphs.push("(Also… founder detected. I’ll behave 😅)");
+  if (user.id === COFOUNDER_ID) paragraphs.push("(I wonder why the co-founder needs this… 🤔)");
 
-  // if all phrases used → reset memory for that topic
-  if (options.length === 0) {
-    brain[user.id].used = [];
-    return available[Math.floor(Math.random() * available.length)];
-  }
-
-  const chosen = options[Math.floor(Math.random() * options.length)];
-  brain[user.id].used.push(chosen);
-
-  return chosen;
+  return paragraphs;
 }
 
-// Detect topic
-function detectTopic(msg) {
+// --------------------
+// Detect multiple topics per message
+// --------------------
+function detectTopics(msg) {
   const text = msg.toLowerCase();
+  const detected = [];
 
-  if (robotSlurs.some(s => text.includes(s))) return "robot";
-  if (badWords.some(s => text.includes(s))) return "badword";
+  if (robotSlurs.some(s => text.includes(s))) return ["robot"];
+  if (badWords.some(b => text.includes(b))) return ["badword"];
 
   for (const key in keywords) {
-    if (keywords[key].some(k => text.includes(k))) return key;
+    if (keywords[key].some(k => text.includes(k))) detected.push(key);
   }
 
-  return "unknown";
+  if (detected.length === 0) return ["unknown"];
+  return detected;
 }
 
-// Typing Simulation
-async function sendTyping(channel, text) {
-  await channel.sendTyping();
-  await new Promise(r => setTimeout(r, text.length * 25 + 200));
-  return channel.send(text);
+// --------------------
+// Typing simulation
+// --------------------
+async function typeSend(channel, paragraphs) {
+  for (const p of paragraphs) {
+    await channel.sendTyping();
+    await new Promise(r => setTimeout(r, p.length * 25 + 300));
+    await channel.send(p);
+  }
 }
 
-// Handle Messages
+// --------------------
+// Message handler
+// --------------------
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
   if (message.channel.id !== process.env.SUPPORT_CHANNEL) return;
 
   const user = message.author;
   const msg = message.content;
-  const topic = detectTopic(msg);
+  const topics = detectTopics(msg);
 
-  // Handle bad words
-  if (topic === "badword") {
+  if (topics.includes("badword")) {
     return message.reply("❌ Sorry, Moon didn’t program me to listen to swearwords!");
   }
 
-  // Pick smart response
-  let text = pickResponse(user, topic);
-
-  // Founder & Co‑founder comments (ONLY WHEN NOT robot slur)
-  if (topic !== "robot") {
-    if (user.id === FOUNDER_ID) {
-      text += "\n(Also… founder detected. I’ll behave 😅)";
-    }
-    if (user.id === COFOUNDER_ID) {
-      text += "\n(I wonder why the co-founder needs this… 🤔)";
-    }
-  }
-
-  // Insert username
-  text = text.replace("{user}", `<@${user.id}>`);
-
-  // Send
-  await sendTyping(message.channel, text);
+  const paragraphs = pickSmartResponse(user, topics);
+  await typeSend(message.channel, paragraphs);
 });
 
 client.login(process.env.DISCORD_TOKEN);
