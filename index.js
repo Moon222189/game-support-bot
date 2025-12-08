@@ -11,11 +11,9 @@ const client = new Client({
 });
 
 const SUPPORT_CHANNEL = "1447354370420113610";
-
 const FOUNDER_ID = "1323241842975834166";
 const COFOUNDER_ID = "790777715652952074";
 
-// AI support corpus
 const corpus = [
   "How do I open a ticket?",
   "Tickets are the fastest way to get help! 💬",
@@ -28,10 +26,10 @@ const corpus = [
   "Who is Monkey401?",
   "Monkey401 is the co-founder of Forest Taggers 🐒",
   "Bye",
-  "Goodbye! Have a great day! 👋"
+  "Goodbye! Have a great day! 👋",
+  // Add more support instructions here
 ];
 
-// Bad words and robot slurs
 const badWords = ["fuck", "shit", "bitch", "asshole", "dumb", "stupid"];
 const robotSlurs = ["clanker", "wireback", "tin can", "metalhead", "bot-brain"];
 
@@ -58,12 +56,13 @@ function generateResponse(prompt, userId) {
   if (userId === FOUNDER_ID) extraNote = "\n(Also… founder detected. I’ll behave 😅)";
   if (userId === COFOUNDER_ID) extraNote = "\n(I wonder why the co-founder needs this… 🤔)";
 
-  // Dynamic response
+  // Support instructions AI
   let response = "";
   const words = promptLower.split(/\s+/);
+
+  // Match keywords for support instructions
   for (const sentence of corpus) {
-    const sentenceLower = sentence.toLowerCase();
-    if (words.some(word => sentenceLower.includes(word))) {
+    if (words.some(word => sentence.toLowerCase().includes(word))) {
       response += sentence + " ";
     }
   }
