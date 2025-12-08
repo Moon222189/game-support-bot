@@ -10,21 +10,21 @@ const client = new Client({
   ]
 });
 
-// Founder / Co-founder
+// Founder / Co-founder IDs
 const FOUNDER_ID = "1323241842975834166";
 const COFOUNDER_ID = "790777715652952074";
 
 // Support channel ID
 const SUPPORT_CHANNEL = "1447354370420113610";
 
-// Slurs / Bad words
+// Robot slurs / bad words
 const robotSlurs = ["clanker","wireback","tin can","metalhead","bot-brain"];
 const badWords = ["fuck","shit","bitch","asshole","dumb","stupid"];
 
-// Support topic keywords
+// Support keywords
 const keywords = {
   greeting: ["hi","hello","hey","yo","hiya","sup","how are you","what's up"],
-  ticket: ["ticket","support","help","assist","problem","issue","contact staff","open a ticket","how to open a ticket"],
+  ticket: ["ticket","support","help","assist","problem","issue","contact staff","open a ticket","how to open a ticket","need help","report issue"],
   boost: ["boost","nitro","server boost","perks","boosting"],
   bug: ["bug","glitch","error","broken","crash","lag","freeze"],
   account: ["login","account","password","username","reset","profile"],
@@ -34,7 +34,7 @@ const keywords = {
   thanks: ["thanks","thank you","ty","thx","appreciate"]
 };
 
-// Templates for dynamic multi-paragraph responses
+// Multi-paragraph templates
 const templates = {
   greeting: [
     "Hello {user}! How are you today? 🌲",
@@ -45,11 +45,12 @@ const templates = {
     "Hey {user}, I’m here for support anytime."
   ],
   ticket: [
-    "Tickets are the fastest way to get help! 💬 Submit your problem and staff will respond ASAP.",
-    "Open a support ticket so our team can assist quickly. 📝",
+    "💬 Tickets are the fastest way to get help! Submit your problem and staff will respond ASAP.",
+    "Step 1️⃣: Go to the #support channel. Step 2️⃣: Click 'New Ticket' or type your issue. Step 3️⃣: Staff will respond shortly! 📝",
     "For fast support, creating a ticket ensures your issue is prioritized. 📩",
     "Need help? Submit a ticket and staff will take care of it promptly. 💌",
-    "A support ticket is the quickest method to solve your problem! 💚"
+    "A support ticket is the quickest method to solve your problem! 💚",
+    "Follow these steps to open a ticket: 1. Click the ‘Open Ticket’ button, 2. Describe your problem clearly, 3. Wait for a staff member to respond."
   ],
   boost: [
     "Boosting the server unlocks perks for everyone! 💎",
@@ -94,12 +95,14 @@ const templates = {
   ]
 };
 
-// Memory to avoid repetition and simulate learning
-const brain = {};
+// Normalize text
+function normalize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9 ]/g, "");
+}
 
-// Detect topics from message
+// Detect topics
 function detectTopics(msg) {
-  const text = msg.toLowerCase();
+  const text = normalize(msg);
   if (robotSlurs.some(s => text.includes(s))) return ["robot"];
   if (badWords.some(b => text.includes(b))) return ["badword"];
   const detected = [];
@@ -109,20 +112,18 @@ function detectTopics(msg) {
   return detected.length ? detected : ["unknown"];
 }
 
-// Build a response dynamically
-function buildResponse(user, msg, topics) {
+// Build smart multi-topic response
+function buildResponse(user, topics) {
   const paragraphs = [];
   for (const topic of topics) {
     if (templates[topic]) {
-      const possible = templates[topic];
-      const selected = [];
+      const possible = [...templates[topic]];
       const pickCount = Math.min(2, possible.length);
-      while (selected.length < pickCount) {
-        const i = Math.floor(Math.random() * possible.length);
-        selected.push(possible[i].replace("{user}", `<@${user.id}>`));
-        possible.splice(i, 1);
+      for (let i = 0; i < pickCount; i++) {
+        const idx = Math.floor(Math.random() * possible.length);
+        paragraphs.push(possible[idx].replace("{user}", `<@${user.id}>`));
+        possible.splice(idx,1);
       }
-      paragraphs.push(...selected);
     }
   }
 
@@ -142,20 +143,23 @@ async function typeSend(channel, paragraphs) {
   }
 }
 
-// Handle incoming messages
+// Handle messages
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
+
+  // Only respond in support channel
   if (message.channel.id !== SUPPORT_CHANNEL) return;
 
   const user = message.author;
   const msg = message.content;
 
   const topics = detectTopics(msg);
+
   if (topics.includes("badword")) {
     return message.reply("❌ Sorry, Moon didn’t program me to listen to swearwords!");
   }
 
-  const paragraphs = buildResponse(user, msg, topics);
+  const paragraphs = buildResponse(user, topics);
   await typeSend(message.channel, paragraphs);
 });
 
