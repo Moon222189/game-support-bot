@@ -1,10 +1,16 @@
 import { Client, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
-import { pipeline } from "@xenova/transformers";
 dotenv.config();
 
+// Use transformers.js for local GPT-2
+import { pipeline } from "@xenova/transformers";
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 // --------------------
@@ -91,12 +97,19 @@ const responses = {
 };
 
 // --------------------
-// Load local AI model
+// Load local AI model safely
 // --------------------
 let generator;
+let modelReady = false;
+
 (async () => {
-  generator = await pipeline("text-generation", "gpt2");
-  console.log("Local GPT-2 AI model loaded!");
+  try {
+    generator = await pipeline("text-generation", "gpt2");
+    modelReady = true;
+    console.log("✅ Local GPT-2 AI model loaded!");
+  } catch (err) {
+    console.error("❌ Failed to load GPT-2 model:", err);
+  }
 })();
 
 // --------------------
@@ -118,13 +131,12 @@ function detectTopics(msg) {
 }
 
 // --------------------
-// Build multi-topic multi-paragraph response
+// Build response
 // --------------------
 async function buildResponse(user, msg, topics) {
   const paragraphs = [];
 
   for (const topic of topics) {
-    // Use templates for known support topics
     if (responses[topic]) {
       if (!brain[user.id]) brain[user.id] = {};
       if (!brain[user.id][topic]) brain[user.id][topic] = [];
@@ -136,9 +148,7 @@ async function buildResponse(user, msg, topics) {
       brain[user.id][topic].push(chosen);
 
       paragraphs.push(chosen.replace("{user}", `<@${user.id}>`));
-    } 
-    // Use GPT-2 for unknown or open-ended topics
-    else if (generator) {
+    } else if (generator && modelReady) {
       try {
         const prompt = `${user.username}: ${msg}\nBot:`;
         const outputs = await generator(prompt, { max_new_tokens: 80, temperature: 0.8 });
@@ -146,11 +156,11 @@ async function buildResponse(user, msg, topics) {
         if (aiText) paragraphs.push(aiText);
       } catch (e) {
         console.error("AI generation error:", e);
+        paragraphs.push(`Hmm… I’m not sure about that. Please open a ticket, <@${user.id}>.`);
       }
     }
   }
 
-  // Add subtle founder/co-founder notes
   if (user.id === FOUNDER_ID) paragraphs.push("(Also… founder detected. I’ll behave 😅)");
   if (user.id === COFOUNDER_ID) paragraphs.push("(I wonder why the co-founder needs this… 🤔)");
 
@@ -188,4 +198,7 @@ client.on("messageCreate", async message => {
   await typeSend(message.channel, paragraphs);
 });
 
+// --------------------
+// Login
+// --------------------
 client.login(process.env.DISCORD_TOKEN);
