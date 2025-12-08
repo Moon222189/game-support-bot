@@ -15,7 +15,7 @@ const FOUNDER_ID = "1323241842975834166";
 const COFOUNDER_ID = "790777715652952074";
 
 // Support channel ID
-const SUPPORT_CHANNEL = "1443121189445959836";
+const SUPPORT_CHANNEL = "1447354370420113610";
 
 // Slurs / Bad words
 const robotSlurs = ["clanker","wireback","tin can","metalhead","bot-brain"];
