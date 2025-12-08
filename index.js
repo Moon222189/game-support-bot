@@ -1,20 +1,23 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, Partials } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
+// Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
-  ]
+  ],
+  partials: [Partials.Channel]
 });
 
+// Config
 const SUPPORT_CHANNEL = "1443121189445959836";
 const FOUNDER_ID = "1323241842975834166";
 const COFOUNDER_ID = "790777715652952074";
 
-// Super smart support corpus (example, can expand to 500+ phrases)
+// Smart support corpus
 const corpus = [
   // Tickets
   "Tickets are the fastest way to get help! 💬",
@@ -39,16 +42,15 @@ const corpus = [
   // General FAQs
   "I can help you with tickets, boosting, and other support questions.",
   "I’m here to guide you with Forest Taggers support anytime!",
-  // Add hundreds more here...
 ];
 
-// Bad words and robot slurs
+// Bad words & robot slurs
 const badWords = ["fuck", "shit", "bitch", "asshole", "dumb", "stupid"];
 const robotSlurs = ["clanker", "wireback", "tin can", "metalhead", "bot-brain"];
 
 const userContext = {};
 
-// Simple paraphrasing helper
+// Paraphrasing for human-like responses
 function paraphrase(sentence) {
   const variations = [
     sentence,
@@ -64,6 +66,7 @@ function paraphrase(sentence) {
   return variations[Math.floor(Math.random() * variations.length)];
 }
 
+// Generate AI-like response
 function generateResponse(prompt, userId) {
   const promptLower = prompt.toLowerCase();
 
@@ -81,34 +84,40 @@ function generateResponse(prompt, userId) {
   if (!userContext[userId]) userContext[userId] = [];
   userContext[userId].push(prompt);
 
+  // Founder/Co-founder note
   let extraNote = "";
   if (userId === FOUNDER_ID) extraNote = "\n(Also… founder detected. I’ll behave 😅)";
   if (userId === COFOUNDER_ID) extraNote = "\n(I wonder why the co-founder needs this… 🤔)";
 
-  // Match keywords
+  // Keyword matching for corpus
   const words = promptLower.split(/\s+/);
   let matches = corpus.filter(sentence =>
     words.some(word => sentence.toLowerCase().includes(word))
   );
 
-  // If no direct match, fallback to general help
-  if (matches.length === 0) {
+  // Fallback if no match
+  if (!matches.length) {
     matches = ["I’m sorry, I can’t answer that 😅 — I only know Forest Taggers support."];
   }
 
-  // Pick one or more matches randomly
+  // Randomly pick and paraphrase
   const chosen = matches[Math.floor(Math.random() * matches.length)];
   return paraphrase(chosen) + extraNote;
 }
 
+// Listen to messages in support channel
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (message.channel.id !== SUPPORT_CHANNEL) return;
 
   await message.channel.sendTyping();
-
   const response = generateResponse(message.content, message.author.id);
   await message.channel.send(`@${message.author.username} ${response}`);
+});
+
+// Login bot
+client.once("ready", () => {
+  console.log(`${client.user.tag} is online! ✅`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
