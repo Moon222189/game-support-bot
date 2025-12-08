@@ -23,10 +23,10 @@ client.on("messageCreate", async (message) => {
     const res = await fetch("http://localhost:5000/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: message.content, user_id: message.author.id }),
+      body: JSON.stringify({ prompt: message.content, user_id: message.author.id })
     });
     const data = await res.json();
-    await message.channel.send(data.response);
+    await message.channel.send(`@${message.author.username} ${data.response}`);
   } catch (err) {
     console.error(err);
     await message.channel.send("❌ Something went wrong with the AI backend.");
