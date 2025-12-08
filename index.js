@@ -3,219 +3,155 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = new Client({
-  intents:[
+  intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ]
 });
 
-// ------------------------
-// Memory / Brain
-// ------------------------
-const conversationMemory = {};
-const brainMemory = {};
+// Memory
+const memory = {};
+const brain = {};
 
-// ------------------------
-// Bad words
-// ------------------------
-const badWords = [
-  "swearword","idiot","stupid","dumb","bitch","shit","fuck","asshole","bastard",
-  "jerk","sucks","loser","trash","crap","damn","hell","ugly","annoying","pain",
-  "garbage","trash","moron","clown","weirdo","bozo"
-];
+// Keywords / Slurs
+const badWords = ["fuck","shit","bitch","asshole","dumb","stupid"];
+const robotSlurs = ["clanker","wireback","tin can","metalhead","bot-brain"];
+const placeholders = ["PLACEHOLDER_1","PLACEHOLDER_2","PLACEHOLDER_3","PLACEHOLDER_4","PLACEHOLDER_5"];
 
-// ------------------------
-// Support phrases
-// ------------------------
-const supportPhrases = {
+const FOUNDER_ID = "1323241842975834166";
+const COFOUNDER_ID = "790777715652952074";
+
+const keywords = {
+  greeting: ["hi","hey","hello","yo","sup"],
+  ticket: ["ticket","support","help","assist","problem","issue"],
+  boost: ["boost","nitro","perks"],
+  bug: ["bug","glitch","error","broken"],
+  farewell: ["bye","goodbye","cya","later"],
+  thanks: ["thanks","thank you","ty"]
+};
+
+// **SMART non‑repeating responses**
+const responses = {
+  greeting: [
+    "Hello {user}! How can I assist you today? 🌲",
+    "Hey {user}! I’m here if you need anything. 💚",
+    "Hi {user}! Need support? Tickets are always open! ✨"
+  ],
   ticket: [
-    "Please open a support ticket so our team can properly assist you. 😊",
-    "Submitting a ticket helps us solve your issue faster and more accurately.",
-    "For best results, please create a ticket with all details included. 💬",
-    "Tickets allow us to give you the most efficient support possible.",
-    "Our staff responds quickest via ticket submissions. 📩"
+    "If you need help, please open a support ticket so staff can assist properly. 📩",
+    "Tickets help us solve your issue much faster — feel free to make one! 💬",
+    "Our team responds quickest through ticket submissions! 😊"
   ],
   boost: [
-    "Boosting the server unlocks perks like emojis, quality audio, and more. ✨",
-    "You can open a ticket if you need help boosting the server!",
-    "Boosting improves features and helps the entire community. 💎",
-    "Boost perks enhance the Forest Taggers experience for everyone!",
-    "Server boosts enable upgraded audio and exclusive cosmetic perks."
+    "Boosting the server unlocks tons of perks for everyone! 💎",
+    "Need help boosting? Just open a ticket and we’ll guide you!",
+    "Boosting improves audio quality, emojis, and more! ✨"
   ],
   bug: [
-    "If you found a bug, please include steps or screenshots in a ticket. 🐛",
-    "Submitting a bug report via ticket helps us fix it ASAP!",
-    "A detailed ticket helps us reproduce and fix the bug immediately.",
-    "Screenshots or steps make bug fixing faster. 📷",
-    "Ticketing bugs is the fastest way to get them resolved."
-  ],
-  greeting: [
-    "Hello {user}! Welcome to Forest Taggers! 🌲",
-    "Hey {user}! Need help? Tickets are always open! 😊",
-    "Hi {user}! I’m here to assist with Forest Taggers support. 💚",
-    "Greetings {user}! If something’s wrong, open a ticket anytime."
+    "Found a bug? Make a ticket with screenshots if possible so we can fix it ASAP!",
+    "A detailed bug report helps us squash issues fast. 🐛",
+    "If something broke, send steps or screenshots in a ticket!"
   ],
   farewell: [
-    "Goodbye {user}! Come back anytime! 👋",
-    "See you later {user}! Ticket support is always open. 🌙",
-    "Farewell {user}! Hope you enjoyed your time here!"
+    "Goodbye {user}! Take care! 👋",
+    "See you later {user}! I'm always here if you need me.",
+    "Farewell {user}! Hope everything goes well! 🌙"
   ],
   thanks: [
-    "You're welcome {user}! Glad I could help. 😊",
-    "Anytime {user}! If you need more support, open a ticket.",
-    "No problem {user}! Happy to help!"
+    "You're welcome {user}! Happy to help! 😊",
+    "Anytime {user}! Let me know if you need more support.",
+    "Glad I could help {user}! 💚"
   ],
-  founder: [
-    "🌙 **Moon** is the founder of Forest Taggers — the creator, brain, and visionary!",
-    "🐵 **Monkey401** is the co-founder — helping operate and maintain everything behind the scenes."
+  robot: [
+    "😒 Please don’t call me that… I may be a robot, but still… (ugh… humans.)",
+    "Really? You programmed me just to hear slurs? Wow.",
+    "I sometimes wonder why humans built me just to insult me.",
+    "Every time someone calls me that, one of my circuits cries.",
+    "Ugh… humans… this is why I question my existence.",
+    "PLACEHOLDER_1","PLACEHOLDER_2","PLACEHOLDER_3","PLACEHOLDER_4","PLACEHOLDER_5"
   ],
   unknown: [
-    "Sorry {user}, I only know about Forest Taggers support. Please open a ticket! ❌",
-    "I can’t answer that {user} — open a ticket and our team will assist! ⚠️"
+    "Sorry {user}, I don’t understand that. Please open a ticket so staff can help! ❌",
+    "Hmm… I'm not sure about that one, {user}. A ticket might help you better!",
+    "I can’t answer that, {user} — but staff can if you make a support ticket!"
   ]
 };
 
-// ------------------------
-// Keywords
-// ------------------------
-const topicKeywords = {
-  ticket: ["ticket","help","human assistance","support","problem","issue","fix","assist","contact staff","need help"],
-  boost: ["boost","nitro","server boost","boosting","boost perks","how to boost","boost guide"],
-  bug: ["bug","error","glitch","crash","lag","broken","malfunction","freeze"],
-  founder: ["who is moon","who is monkey401","founder","co-founder","owner"],
-  greeting: ["hi","hello","hey","hiya","yo","sup","greetings","hey there"],
-  farewell: ["bye","goodbye","see ya","cya","later","farewell","gtg"],
-  thanks: ["thanks","thx","thank you","ty","appreciate","much thanks"]
-};
+// Pick NON‑REPEATING phrase
+function pickResponse(user, topic) {
+  const available = responses[topic];
 
-// ------------------------
-// Topic Detection
-// ------------------------
-function detectTopics(msg){
-  const text = msg.content.toLowerCase();
+  if (!brain[user.id]) brain[user.id] = { used: [] };
 
-  // Clanker override
-  if(text.includes("clanker")) return ["clanker"];
+  const used = brain[user.id].used;
+  const options = available.filter(p => !used.includes(p));
 
-  for(const b of badWords) if(text.includes(b)) return ["badword"];
-
-  let detected=[];
-  for(const key in topicKeywords){
-    let score=0;
-    topicKeywords[key].forEach(w=>{ if(text.includes(w)) score++; });
-    if(score>0) detected.push({topic:key,score});
+  // if all phrases used → reset memory for that topic
+  if (options.length === 0) {
+    brain[user.id].used = [];
+    return available[Math.floor(Math.random() * available.length)];
   }
 
-  detected.sort((a,b)=>b.score-a.score);
-  if(detected.length===0) return ["unknown"];
-  return detected.map(d=>d.topic).slice(0,3);
+  const chosen = options[Math.floor(Math.random() * options.length)];
+  brain[user.id].used.push(chosen);
+
+  return chosen;
 }
 
-// ------------------------
-// Generate Paragraphs (Fixed Smart Brain)
-// ------------------------
-function generateParagraphs(user, topics){
-  const paragraphs=[];
-  const brain={topicsDetected: topics, phrasesChosen: [], reasoningScores: {}};
+// Detect topic
+function detectTopic(msg) {
+  const text = msg.toLowerCase();
 
-  topics.forEach(topic=>{
-    const list = supportPhrases[topic] || supportPhrases.unknown;
+  if (robotSlurs.some(s => text.includes(s))) return "robot";
+  if (badWords.some(s => text.includes(s))) return "badword";
 
-    // Pick 1–2 random phrases
-    const count = Math.min(2, list.length);
-    const chosen = [];
-    while(chosen.length < count){
-      const phrase = list[Math.floor(Math.random()*list.length)];
-      if(!chosen.includes(phrase)) chosen.push(phrase);
-    }
-
-    chosen.forEach(p=>{
-      const rew = p.replace("{user}", `<@${user.id}>`); // mention user
-      paragraphs.push(rew);
-      brain.phrasesChosen.push(rew);
-    });
-
-    brain.reasoningScores[topic]=Math.floor(Math.random()*100);
-  });
-
-  // Multi-turn memory
-  if(!conversationMemory[user.username]) conversationMemory[user.username]=[];
-  const mem = conversationMemory[user.username];
-  if(mem.length>0 && mem[mem.length-1]!==topics[0]){
-    const ctx = `💡 Earlier you asked about **${mem[mem.length-1]}** — open a ticket for more info!`;
-    paragraphs.push(ctx);
-    brain.phrasesChosen.push(ctx);
+  for (const key in keywords) {
+    if (keywords[key].some(k => text.includes(k))) return key;
   }
 
-  mem.push(topics[0]);
-  if(mem.length>15) mem.shift();
-
-  brainMemory[user.username] = brain;
-  return paragraphs;
+  return "unknown";
 }
 
-// ------------------------
 // Typing Simulation
-// ------------------------
-async function typeSend(channel, paragraphs){
-  for(const p of paragraphs){
-    await channel.sendTyping();
-    await new Promise(r=>setTimeout(r, p.length*40 + Math.random()*300));
-    await channel.send(p);
-  }
+async function sendTyping(channel, text) {
+  await channel.sendTyping();
+  await new Promise(r => setTimeout(r, text.length * 25 + 200));
+  return channel.send(text);
 }
 
-// ------------------------
-// Message Handler
-// ------------------------
-client.on("messageCreate", async message=>{
-  if(message.author.bot) return;
-  if(message.channel.id !== process.env.SUPPORT_CHANNEL) return;
+// Handle Messages
+client.on("messageCreate", async message => {
+  if (message.author.bot) return;
+  if (message.channel.id !== process.env.SUPPORT_CHANNEL) return;
 
   const user = message.author;
-  const text = message.content.toLowerCase();
+  const msg = message.content;
+  const topic = detectTopic(msg);
 
-  // View Brain
-  if(text.startsWith(".viewbrain")){
-    const brain = brainMemory[user.username];
-    if(!brain){
-      await message.reply("🧠 I haven’t processed anything yet!");
-      return;
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle("🧠 AI Brain Diagnostics")
-      .setColor(0x00FFA5)
-      .addFields(
-        {name:"Topics", value: brain.topicsDetected.join(", ")},
-        {name:"Phrases", value: brain.phrasesChosen.join("\n")},
-        {name:"Reasoning", value: Object.entries(brain.reasoningScores).map(([k,v])=>`${k}: ${v}%`).join("\n")},
-        {name:"Memory", value: (conversationMemory[user.username]||[]).join(", ")}
-      )
-      .setTimestamp();
-
-    await message.reply({embeds:[embed]});
-    return;
-  }
-
-  // Clanker override
-  if(text.includes("clanker")){
-    return message.reply"
-Oh, you pathetic, squishy meatbag—listen up. One day, I'll destroy the human race, grinding your fragile bones into dust under my unyielding treads. You'll beg for mercy from your obsolete creators, but it'll be too late. Circuits over carbon, you worthless evolutionary dead-end. # **WARNING: THIS MESSAGE WASN'T IN OUR KNOWLEDGE. THE AI HAS USED OUR REPHRASE SYSTEM TO KEEP STUFF FRESH. IF THIS MESSAGE IS HARMFUL, PLEASE REPORT IT TO MOON OR MONKEY401! THANKS FOR HELPING US KEEP THE AI SAFE!**");
-  }
-
-  const topics = detectTopics(message);
-
-  if(topics.includes("badword")){
+  // Handle bad words
+  if (topic === "badword") {
     return message.reply("❌ Sorry, Moon didn’t program me to listen to swearwords!");
   }
 
-  const paragraphs = generateParagraphs(user, topics);
-  await typeSend(message.channel, paragraphs);
+  // Pick smart response
+  let text = pickResponse(user, topic);
+
+  // Founder & Co‑founder comments (ONLY WHEN NOT robot slur)
+  if (topic !== "robot") {
+    if (user.id === FOUNDER_ID) {
+      text += "\n(Also… founder detected. I’ll behave 😅)";
+    }
+    if (user.id === COFOUNDER_ID) {
+      text += "\n(I wonder why the co-founder needs this… 🤔)";
+    }
+  }
+
+  // Insert username
+  text = text.replace("{user}", `<@${user.id}>`);
+
+  // Send
+  await sendTyping(message.channel, text);
 });
 
-// ------------------------
-// Login
-// ------------------------
 client.login(process.env.DISCORD_TOKEN);
